@@ -1,5 +1,0 @@
-/app/build/CMakeFiles/ChromeTabsQt.dir
-/app/build/CMakeFiles/edit_cache.dir
-/app/build/CMakeFiles/rebuild_cache.dir
-/app/build/CMakeFiles/ChromeTabsQt_autogen_timestamp_deps.dir
-/app/build/CMakeFiles/ChromeTabsQt_autogen.dir
