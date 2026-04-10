@@ -9,22 +9,25 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Gui Qml Quick)
 
-add_executable(ChromeTabsQt
+qt_add_executable(ChromeTabsQt
     src/main.cpp
     src/TabSession.h
     src/TabSession.cpp
     src/TabView.h
     src/TabView.cpp
-    src/DetachableTabBar.h
-    src/DetachableTabBar.cpp
-    src/TabHost.h
-    src/TabHost.cpp
-    src/AppWindow.h
-    src/AppWindow.cpp
     src/WindowManager.h
     src/WindowManager.cpp
 )
 
-target_link_libraries(ChromeTabsQt PRIVATE Qt6::Widgets)
+qt_add_qml_module(ChromeTabsQt
+    URI ChromeTabsQt
+    VERSION 1.0
+    QML_FILES
+        src/Main.qml
+        src/TabContainer.qml
+        src/TabItemView.qml
+)
+
+target_link_libraries(ChromeTabsQt PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick)

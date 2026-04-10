@@ -1,17 +1,22 @@
 #pragma once
 
-#include <QWidget>
+#include <QObject>
+#include <QString>
+#include <QtQml/qqmlregistration.h>
 
-class QTextEdit;
-
-class TabView : public QWidget {
+class TabView : public QObject {
     Q_OBJECT
+    Q_PROPERTY(QString content READ content WRITE setContent NOTIFY contentChanged)
+    QML_ELEMENT
 public:
-    explicit TabView(QWidget* parent = nullptr);
+    explicit TabView(QObject* parent = nullptr);
 
-    QString content() const;
+    QString content() const { return m_content; }
     void setContent(const QString& content);
 
+signals:
+    void contentChanged();
+
 private:
-    QTextEdit* m_textEdit;
+    QString m_content;
 };

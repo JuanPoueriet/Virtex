@@ -3,13 +3,19 @@
 #include <QString>
 #include <QIcon>
 #include <QObject>
-
-class TabView;
+#include <QtQml/qqmlregistration.h>
+#include "TabView.h"
 
 class TabSession : public QObject {
     Q_OBJECT
+    Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
+    Q_PROPERTY(bool isDirty READ isDirty WRITE setDirty NOTIFY dirtyChanged)
+    Q_PROPERTY(TabView* view READ view WRITE setView NOTIFY viewChanged)
+    QML_ELEMENT
+
 public:
-    explicit TabSession(const QString& title, QObject* parent = nullptr);
+    explicit TabSession(QObject* parent = nullptr);
+    TabSession(const QString& title, QObject* parent = nullptr);
 
     QString title() const { return m_title; }
     void setTitle(const QString& title);
@@ -24,9 +30,10 @@ public:
     void setDirty(bool dirty);
 
 signals:
-    void titleChanged(const QString& title);
-    void iconChanged(const QIcon& icon);
-    void dirtyChanged(bool dirty);
+    void titleChanged();
+    void iconChanged();
+    void dirtyChanged();
+    void viewChanged();
 
 private:
     QString m_title;

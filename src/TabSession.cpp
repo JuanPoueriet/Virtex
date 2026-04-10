@@ -1,6 +1,10 @@
 #include "TabSession.h"
 #include "TabView.h"
 
+TabSession::TabSession(QObject* parent)
+    : QObject(parent) {
+}
+
 TabSession::TabSession(const QString& title, QObject* parent)
     : QObject(parent), m_title(title) {
 }
@@ -8,22 +12,25 @@ TabSession::TabSession(const QString& title, QObject* parent)
 void TabSession::setTitle(const QString& title) {
     if (m_title != title) {
         m_title = title;
-        emit titleChanged(m_title);
+        emit titleChanged();
     }
 }
 
 void TabSession::setIcon(const QIcon& icon) {
     m_icon = icon;
-    emit iconChanged(m_icon);
+    emit iconChanged();
 }
 
 void TabSession::setView(TabView* view) {
-    m_view = view;
+    if (m_view != view) {
+        m_view = view;
+        emit viewChanged();
+    }
 }
 
 void TabSession::setDirty(bool dirty) {
     if (m_isDirty != dirty) {
         m_isDirty = dirty;
-        emit dirtyChanged(m_isDirty);
+        emit dirtyChanged();
     }
 }

@@ -1,80 +1,85 @@
 #include "WindowManager.h"
-#include "AppWindow.h"
-#include "TabHost.h"
 #include "TabSession.h"
 #include <algorithm>
-#include <QApplication>
-#include <QScreen>
+#include <QGuiApplication>
+#include <QQuickWindow>
+#include <QQmlApplicationEngine>
 #include <QDebug>
+
+WindowManager::WindowManager(QObject* parent) : QObject(parent) {
+}
 
 WindowManager& WindowManager::instance() {
     static WindowManager manager;
     return manager;
 }
 
-AppWindow* WindowManager::createWindow() {
-    AppWindow* window = new AppWindow();
-    m_windows.push_back(window);
-    window->show();
-    return window;
+void WindowManager::createWindow() {
+    QQmlApplicationEngine* engine = qobject_cast<QQmlApplicationEngine*>(QGuiApplication::instance()->property("engine").value<QObject*>());
+    if (!engine) return;
+
+    QQmlComponent component(engine, QUrl(u"qrc:/app/src/Main.qml"_qs));
+    QObject* obj = component.create();
+    QQuickWindow* window = qobject_cast<QQuickWindow*>(obj);
+    if (window) {
+        m_windows.push_back(window);
+        connect(window, &QQuickWindow::closing, this, [this, window]() {
+            removeWindow(window);
+        });
+        window->show();
+    } else {
+        qWarning() << "Failed to create window:" << component.errorString();
+    }
 }
 
-void WindowManager::removeWindow(AppWindow* window) {
+void WindowManager::removeWindow(QQuickWindow* window) {
     auto it = std::find(m_windows.begin(), m_windows.end(), window);
     if (it != m_windows.end()) {
         m_windows.erase(it);
     }
     if (m_windows.empty()) {
-        QApplication::quit();
+        QGuiApplication::quit();
     }
 }
 
-void WindowManager::moveTab(TabSession* session, TabHost* fromHost, TabHost* toHost, int toIndex) {
-    if (!session || !fromHost || !toHost) return;
+void WindowManager::moveTab(TabSession* session, QObject* fromContainer, QObject* toContainer, int toIndex) {
+    if (!session || !fromContainer || !toContainer) return;
 
-    int fromIndex = -1;
-    for (int i = 0; i < fromHost->count(); ++i) {
-        if (fromHost->getTab(i) == session) {
-            fromIndex = i;
-            break;
-        }
-    }
-
-    if (fromIndex == -1) return;
-
-    // Prevent deletion of host/window while moving if it's the last tab
-    // We move first, then remove from source.
-    fromHost->removeTab(fromIndex, false);
-
-    if (toIndex == -1) {
-        toHost->addTab(session);
-    } else {
-        toHost->insertTab(toIndex, session);
-    }
+    QMetaObject::invokeMethod(fromContainer, "removeTabBySession", Q_ARG(TabSession*, session));
+    QMetaObject::invokeMethod(toContainer, "insertTab", Q_ARG(int, toIndex), Q_ARG(TabSession*, session));
 }
 
-void WindowManager::detachTab(TabSession* session, TabHost* fromHost, const QPoint& globalPos) {
-    int fromIndex = -1;
-    for (int i = 0; i < fromHost->count(); ++i) {
-        if (fromHost->getTab(i) == session) {
-            fromIndex = i;
-            break;
-        }
-    }
-    if (fromIndex == -1) return;
+void WindowManager::detachTab(TabSession* session, QObject* fromContainer, const QPoint& globalPos) {
+    if (!session || !fromContainer) return;
 
-    fromHost->removeTab(fromIndex, false);
+    QMetaObject::invokeMethod(fromContainer, "removeTabBySession", Q_ARG(TabSession*, session));
 
-    AppWindow* newWindow = createWindow();
-    newWindow->tabHost()->addTab(session);
-    newWindow->move(globalPos);
-}
+    QQmlApplicationEngine* engine = qobject_cast<QQmlApplicationEngine*>(QGuiApplication::instance()->property("engine").value<QObject*>());
+    if (!engine) return;
 
-void WindowManager::notifyTabHostEmpty(TabHost* host) {
-    AppWindow* window = qobject_cast<AppWindow*>(host->window());
+    QQmlComponent component(engine, QUrl(u"qrc:/app/src/Main.qml"_qs));
+    QObject* obj = component.create();
+    QQuickWindow* window = qobject_cast<QQuickWindow*>(obj);
     if (window) {
-        // We use deleteLater to avoid issues if we are in a middle of some event
-        window->deleteLater();
-        removeWindow(window);
+        m_windows.push_back(window);
+        connect(window, &QQuickWindow::closing, this, [this, window]() {
+            removeWindow(window);
+        });
+
+        window->setX(globalPos.x());
+        window->setY(globalPos.y());
+
+        QObject* tabContainer = window->findChild<QObject*>("tabContainer");
+        if (tabContainer) {
+            QMetaObject::invokeMethod(tabContainer, "addTab", Q_ARG(TabSession*, session));
+        }
+
+        window->show();
+    }
+}
+
+void WindowManager::notifyTabHostEmpty(QQuickWindow* window) {
+    if (window) {
+        window->close();
     }
 }

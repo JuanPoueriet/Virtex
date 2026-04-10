@@ -2,25 +2,28 @@
 
 #include <QObject>
 #include <vector>
+#include <QPoint>
+#include <QtQml/qqmlregistration.h>
 
-class AppWindow;
+class QQuickWindow;
 class TabSession;
-class TabHost;
 
 class WindowManager : public QObject {
     Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
 public:
     static WindowManager& instance();
 
-    AppWindow* createWindow();
-    void removeWindow(AppWindow* window);
+    Q_INVOKABLE void createWindow();
+    void removeWindow(QQuickWindow* window);
 
-    void moveTab(TabSession* session, TabHost* fromHost, TabHost* toHost, int toIndex = -1);
-    void detachTab(TabSession* session, TabHost* fromHost, const QPoint& globalPos);
+    Q_INVOKABLE void moveTab(TabSession* session, QObject* fromContainer, QObject* toContainer, int toIndex = -1);
+    Q_INVOKABLE void detachTab(TabSession* session, QObject* fromContainer, const QPoint& globalPos);
 
-    void notifyTabHostEmpty(TabHost* host);
+    void notifyTabHostEmpty(QQuickWindow* window);
 
 private:
-    WindowManager() = default;
-    std::vector<AppWindow*> m_windows;
+    WindowManager(QObject* parent = nullptr);
+    std::vector<QQuickWindow*> m_windows;
 };
